@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c66d94dc-9fb5-47ef-815d-da3453c7e565" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="1eae160a-b917-4a54-ae67-19dbff420a69" >
+		<salesforce:cached-basic-connection username="arrav@acer.com" password="sales@123" securityToken="mNHqTl1sDuotsierT2YFE0Ui" />
+	</salesforce:sfdc-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="1e7f0c76-38bb-4c05-982b-b4443f37af77" >
+		<file:connection workingDir="D:\file" />
+	</file:config>
+	<flow name="salesforceupsert" doc:id="08ea6feb-d676-4799-96cc-2a7ab5ce6e0c" >
+		<file:listener doc:name="On New or Updated File" doc:id="e3664221-eaef-469f-b751-321cfcd518f6" config-ref="File_Config" directory="D:\file\input" watermarkMode="MODIFIED_TIMESTAMP" moveToDirectory="D:\file\output" renameTo="#[attributes.fileName ++'.backup']">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</file:listener>
+		<ee:transform doc:name="Transform Message" doc:id="c7c17749-e751-4399-a8aa-0510813306b1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="salesforceBatch_Job" doc:id="db137ea6-7ab5-4bef-8570-188e370a8b2d" >
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="f41adfc2-8797-4118-997d-1cff6afec48d" >
+					<ee:transform doc:name="Transform Message" doc:id="15b89f86-7897-4739-858b-edf163013e88" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[{
+	Name: payload.Name,
+	BillingStreet: payload.BillingStreet,
+	BillingCity: payload.BillingCity,
+	BillingState: payload.BillingState,
+	BillingPostalCode: payload.BillingPostalCode
+}]]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<salesforce:upsert type="Account" doc:name="Upsert" doc:id="a1ac218c-dbb4-4064-bb06-e5c46d0646db" config-ref="Salesforce_Config" externalIdFieldName="Id"/>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="676eebaf-e606-4b5c-8d6b-4394f4d8caa3" message="oncomplete"/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>

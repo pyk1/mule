@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="input" format="csv">
+      <types:shape format="weave" example="examples/sfdc-2.csv"><![CDATA[%dw 2.0
+
+type input = Array<{|  BillingStreet: String,   BillingCity: String,   BillingPostalCode: String,   Id: String,   "type": String,   BillingState: String,   Name: String|}>
+
+]]></types:shape>
+      <types:properties>
+        <types:property name="headerLineNumber" value="0"/>
+        <types:property name="header" value="true"/>
+        <types:property name="isQuotedString" value="false"/>
+        <types:property name="separator" value=","/>
+      </types:properties>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#15b89f86-7897-4739-858b-edf163013e88"/>
+</types:mule>
